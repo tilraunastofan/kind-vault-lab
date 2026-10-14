@@ -1,10 +1,14 @@
 version: "3"
 
+env:
+  VAULT_TOKEN:
+    sh: jq -r .root_token .secrets/init.json 2>/dev/null || true
+
 tasks:
   up:
     desc: Bootstrap the whole lab (kind, bao network, HCP workspace, terraform apply)
     cmds:
-      - task: bao:check
+      - task: bao:up
       - task: cluster:up
       - task: tf:workspace
       - task: tf:apply
@@ -14,10 +18,20 @@ tasks:
     cmds:
       - ./scripts/cluster-down.sh
 
-  bao:check:
-    desc: Fail unless the shared OpenBao container is unsealed
+  bao:up:
+    desc: Create/start OpenBao (+ auto-unseal sidecar), init on first run
     cmds:
-      - ./scripts/bao-status.sh
+      - ./scripts/bao-up.sh
+
+  bao:down:
+    desc: Remove OpenBao containers (keeps data)
+    cmds:
+      - ./scripts/bao-down.sh
+
+  bao:purge:
+    desc: DELETE OpenBao data, keys and certs
+    cmds:
+      - ./scripts/bao-purge.sh
 
   cluster:up:
     desc: Create the kind cluster and attach bao to the kind network
@@ -43,7 +57,7 @@ tasks:
   tf:apply:
     dir: terraform
     deps: [tf:init]
-    desc: Apply k8s + OpenBao config (needs VAULT_TOKEN, see README)
+    desc: Apply k8s + OpenBao config (VAULT_TOKEN is read from .secrets/init.json)
     cmds:
       - terraform apply -auto-approve
 

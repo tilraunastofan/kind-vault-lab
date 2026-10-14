@@ -38,8 +38,9 @@ task smoke       # pod logs in to OpenBao via kubernetes auth, reads secret/demo
 task down        # delete the kind cluster (shared bao container is untouched)
 ```
 
-Prerequisites: `~/bao` stack running and **unsealed** (`~/bao/scripts/unseal.sh`), `TERRAFORM_TOKEN`
-and `VAULT_TOKEN` (OpenBao token) exported.
+Prerequisites: `TERRAFORM_TOKEN` exported. OpenBao is owned by this repo (`bao/`, `task bao:up`): a TLS dev CA is
+generated on first run, OpenBao is initialised with 1 key share, and a `bao-unseal` sidecar container
+auto-unseals it whenever it is sealed (also after restarts). Key and root token live in gitignored `.secrets/`.
 
 Layout: `cluster/` kind config, `scripts/` idempotent bootstrap steps, `terraform/` k8s + OpenBao config
 (state in HCP workspace `tilraunastofan/kind-vault-lab`, **local execution** because HCP runners can't reach the laptop).

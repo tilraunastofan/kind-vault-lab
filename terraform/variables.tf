@@ -4,7 +4,7 @@ variable "bao_addr" {
 }
 
 variable "bao_ca_file" {
-  default = "~/bao/pki/ca.crt"
+  default = "../bao/pki/ca.crt"
 }
 
 variable "bao_addr_in_cluster" {

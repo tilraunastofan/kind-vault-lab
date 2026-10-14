@@ -5,3 +5,5 @@ CREDENTIALS.md
 !*.tfvars.example
 .env
 .DS_Store
+.secrets/
+bao/pki/

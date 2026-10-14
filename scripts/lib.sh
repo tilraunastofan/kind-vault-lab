@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 CLUSTER_NAME="${CLUSTER_NAME:-vault-lab}"
 BAO_CONTAINER="${BAO_CONTAINER:-bao}"
-BAO_DIR="${BAO_DIR:-${HOME}/bao}"
+
 TF_ORG="${TF_ORG:-tilraunastofan}"
 TF_WORKSPACE="${TF_WORKSPACE:-kind-vault-lab}"
 

@@ -1,0 +1,41 @@
+# Dev-only OpenBao. Reachable from the Mac at https://bao.orb.local:8200 (OrbStack).
+services:
+  bao:
+    image: openbao/openbao:2.7.0
+    container_name: bao
+    hostname: bao
+    command: ["bao", "server", "-config=/openbao/config/bao.hcl"]
+    cap_add: [IPC_LOCK]
+    restart: unless-stopped
+    environment:
+      BAO_ADDR: https://127.0.0.1:8200
+      BAO_CACERT: /openbao/tls/ca.crt
+    volumes:
+      - ./bao.hcl:/openbao/config/bao.hcl:ro
+      - ./pki:/openbao/tls:ro
+      - bao-data:/openbao/file
+
+  # Auto-unseal: keeps trying to unseal with the key from .secrets/ (dev only!)
+  bao-unseal:
+    image: openbao/openbao:2.7.0
+    container_name: bao-unseal
+    restart: unless-stopped
+    depends_on: [bao]
+    environment:
+      BAO_ADDR: https://bao:8200
+      BAO_CACERT: /tls/ca.crt
+    volumes:
+      - ./pki/ca.crt:/tls/ca.crt:ro
+      - ../.secrets:/secrets:ro
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        while true; do
+          if [ -s /secrets/unseal.key ] && bao status >/dev/null 2>&1; [ $$? -eq 2 ]; then
+            bao operator unseal "$$(cat /secrets/unseal.key)" >/dev/null 2>&1 && echo unsealed
+          fi
+          sleep 3
+        done
+
+volumes:
+  bao-data:
