@@ -62,6 +62,11 @@ tasks:
       - terraform apply -auto-approve
 
   smoke:
-    desc: Pod in the cluster logs in to OpenBao via the kubernetes auth method and reads a secret
+    desc: Policy test matrix - pods in several namespaces/SAs/pod names probe allowed and denied paths
     cmds:
       - ./scripts/smoke-test.sh
+
+  audit:
+    desc: Tail the OpenBao audit log (JSON, secrets HMAC'd)
+    cmds:
+      - docker exec bao tail -n 20 -f /openbao/file/audit.log

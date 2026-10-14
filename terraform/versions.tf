@@ -13,6 +13,8 @@ terraform {
   required_providers {
     vault      = { source = "hashicorp/vault", version = "~> 4.0" }
     kubernetes = { source = "hashicorp/kubernetes", version = "~> 2.30" }
+    random     = { source = "hashicorp/random", version = "~> 3.6" }
+    external   = { source = "hashicorp/external", version = "~> 2.3" }
   }
 }
 

@@ -34,7 +34,8 @@ Lab stack comprises of a few things:
 
 ```sh
 task up          # bao check -> kind cluster -> HCP TF workspace -> terraform apply
-task smoke       # pod logs in to OpenBao via kubernetes auth, reads secret/demo/config
+task smoke       # policy test matrix: pods in team-a/b/c probe allowed + denied paths (docs/POLICIES.md)
+task audit       # tail the OpenBao audit log
 task down        # delete the kind cluster (shared bao container is untouched)
 ```
 
