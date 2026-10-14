@@ -1,5 +1,4 @@
-# Terraform manages OpenBao only. Kubernetes objects live in k8s/ (Kustomize); the few cluster-derived values
-# below are passed in by scripts/tf.sh so this config has no kubernetes provider.
+# Terraform manages OpenBao only. Kubernetes objects live in k8s/ (Kustomize); cluster.tf reads what OpenBao needs.
 
 variable "bao_addr" {
   description = "OpenBao address as seen from this laptop (OrbStack automatic HTTPS, system-trusted)"
@@ -17,26 +16,4 @@ variable "k8s_host_for_bao" {
 variable "onboarded_namespaces" {
   type    = list(string)
   default = ["team-a", "team-b"]
-}
-
-variable "k8s_ca_cert" {
-  description = "Cluster CA (kube-root-ca.crt), so OpenBao can verify the API server"
-  type        = string
-}
-
-variable "k8s_reviewer_jwt" {
-  description = "Token of SA kube-system/bao-auth (auth-delegator): OpenBao's credential for TokenReview"
-  type        = string
-  sensitive   = true
-}
-
-variable "k8s_sa_pubkey" {
-  description = "API server service-account signing public key (PEM), pinned in the jwt-k8s mount"
-  type        = string
-}
-
-variable "pg_root_password" {
-  description = "Postgres root password (generated in k8s/data/pg-root.env); OpenBao's database engine connects with it"
-  type        = string
-  sensitive   = true
 }

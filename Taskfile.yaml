@@ -1,5 +1,9 @@
 version: "3"
 
+# Root token for terraform only (apps never use it); `|| true` so tasks that run before .secrets/ exists still work.
+env:
+  VAULT_TOKEN:
+    sh: jq -r .root_token .secrets/init.json 2>/dev/null || true
 
 tasks:
   up:
@@ -53,21 +57,24 @@ tasks:
     cmds:
       - kubectl --context kind-vault-lab diff -k k8s || true
 
-  # Terraform manages OpenBao only; always run it through scripts/tf.sh (injects VAULT_TOKEN and cluster values).
+  # Terraform manages OpenBao only; it reads the CA/reviewer token from the cluster itself (terraform/cluster.tf).
   tf:init:
+    dir: terraform
     cmds:
-      - ./scripts/tf.sh init
+      - terraform init
 
   tf:plan:
+    dir: terraform
     deps: [tf:init]
     cmds:
-      - ./scripts/tf.sh plan
+      - terraform plan
 
   tf:apply:
+    dir: terraform
     deps: [tf:init]
     desc: Apply the OpenBao configuration (auth mounts, policies, data, DB engine)
     cmds:
-      - ./scripts/tf.sh apply -auto-approve
+      - terraform apply -auto-approve
 
   smoke:
     desc: Policy test matrix - pods in several namespaces/SAs/pod names probe allowed and denied paths

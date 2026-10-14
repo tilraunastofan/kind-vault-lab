@@ -65,7 +65,7 @@ drops the attachment; the scripts re-attach it.
 ## The `jwt-k8s` variant needs less runtime trust
 
 OpenBao holds the API server's **public signing key** (read from
-`/etc/kubernetes/pki/sa.pub` by `scripts/tf.sh` and pinned by Terraform) and verifies the token signature itself: no call
+`/etc/kubernetes/pki/sa.pub` in the kind node and pinned by Terraform) and verifies the token signature itself: no call
 to the API server, no reviewer token. Trade-off: if the cluster's signing key
 rotates, re-apply Terraform. It is also what exposes the pod name (see
 `POLICIES.md`).
@@ -77,9 +77,9 @@ The work is split so each tool has one job (see the diagram in `DIAGRAMS.md`):
 - **Kustomize** (`kubectl apply -k k8s`, via your kubeconfig, context `kind-vault-lab`) creates everything on
   the cluster side: namespaces, service accounts, `bao-auth` + its token, `bao-ca`, Postgres.
 - **Terraform** configures only OpenBao. It uses the OpenBao **root token** from `.secrets/init.json`, created
-  by `operator init` on the first `task bao:up`. It never talks to the cluster: `scripts/tf.sh` reads the
-  values it needs from the cluster (CA, reviewer token, SA public key) and the Postgres password from
-  `k8s/data/pg-root.env`, and passes them in as `TF_VAR_*` together with `VAULT_TOKEN`.
+  by `operator init` on the first `task bao:up`. It creates no cluster objects: read-only
+  data sources (`terraform/cluster.tf`, kubeconfig credentials) fetch the cluster CA, the reviewer token and the
+  Postgres root password that Kustomize created.
 - Order matters: the cluster objects must exist before Terraform, because the reviewer token is created there.
 - Anything an agent or human needs beyond that is a named policy, `lab-admin`,
   not the root token.
@@ -88,7 +88,10 @@ The work is split so each tool has one job (see the diagram in `DIAGRAMS.md`):
 
 - Revoke the root token after setup; administer via `lab-admin` through
   OIDC/userpass.
-- Prefer the `jwt` method (or a short-lived reviewer token) to avoid a
-  long-lived reviewer credential in OpenBao.
+- Avoid the long-lived reviewer credential. It lives in OpenBao's config and in Terraform state (the data source
+  in `cluster.tf` reads it). Prefer the `jwt` method: it verifies tokens by signature and has no reviewer secret.
+  On a real cluster (EKS/GKE/AKS) point it at the cluster's public OIDC issuer (`oidc_discovery_url`), so no key
+  is pinned and no secret exists at all; pinning `sa.pub` is only needed on kind. Pod-name policies already use
+  this mount. For the `kubernetes` method, a short-lived/rotated reviewer token is the fallback.
 - Unseal via KMS/transit instead of a key file; run OpenBao where the same trust
   applies without a shared docker network.

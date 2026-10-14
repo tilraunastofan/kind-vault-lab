@@ -98,10 +98,9 @@ flowchart LR
         PO[policies]
         KV[kv data + database engine]
     end
-    BA -- "reviewer token" --> TS[scripts/tf.sh<br/>TF_VAR_*]
-    PG -- "root password" --> TS
-    API[kube-apiserver] -- "CA + SA public key" --> TS
-    TS --> T
+    BA -- "reviewer token (read-only data source)" --> T
+    PG -- "root password (read-only data source)" --> T
+    API[kube-apiserver] -- "cluster CA" --> T
     T -- "configures" --> BAO[(OpenBao)]
     K -- "applied to" --> API
 ```

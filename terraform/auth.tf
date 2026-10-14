@@ -14,8 +14,8 @@ resource "vault_auth_backend" "kubernetes" {
 resource "vault_kubernetes_auth_backend_config" "this" {
   backend            = vault_auth_backend.kubernetes.path
   kubernetes_host    = var.k8s_host_for_bao
-  kubernetes_ca_cert = var.k8s_ca_cert
-  token_reviewer_jwt = var.k8s_reviewer_jwt
+  kubernetes_ca_cert = data.kubernetes_config_map_v1.kube_root_ca.data["ca.crt"]
+  token_reviewer_jwt = data.kubernetes_secret_v1.bao_auth_token.data["token"]
 }
 
 # ONE generic role for all apps. Identity is not baked into the role; it is
@@ -44,7 +44,7 @@ resource "vault_jwt_auth_backend" "k8s_jwt" {
   type         = "jwt"
   bound_issuer = "https://kubernetes.default.svc.cluster.local"
   # trimspace: bao stores the PEM without its trailing newline; keeping it would show a diff on every plan
-  jwt_validation_pubkeys = [trimspace(var.k8s_sa_pubkey)]
+  jwt_validation_pubkeys = [trimspace(data.external.sa_pubkey.result.pem)]
   tune {
     default_lease_ttl = "10m"
     max_lease_ttl     = "30m"

@@ -3,8 +3,8 @@ resources:
 generatorOptions:
   disableNameSuffixHash: true
 secretGenerator:
-  # pg-root.env (POSTGRES_PASSWORD=...) is generated once by scripts/k8s-up.sh and is gitignored; terraform reads the
-  # same value so OpenBao can connect as the database root user.
+  # pg-root.env (POSTGRES_PASSWORD=...) is generated once by scripts/k8s-up.sh and is gitignored.
+  # Terraform reads it back from this Secret (terraform/cluster.tf) so OpenBao can connect as the DB root user.
   - name: postgres-root
     namespace: data
     envs: [pg-root.env]

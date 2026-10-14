@@ -1,6 +1,6 @@
 # Everything Kubernetes-only lives here and is applied with `kubectl apply -k k8s` (task k8s:apply).
-# Terraform (terraform/) only configures OpenBao; it reads the few values it needs from the cluster
-# via scripts/tf.sh, so OpenBao config and cluster manifests can be reviewed and rolled out separately.
+# Terraform (terraform/) only configures OpenBao; it only *reads* the few values it needs from the cluster
+# (terraform/cluster.tf data sources), so OpenBao config and cluster manifests can be reviewed and rolled out separately.
 resources:
   - namespaces
   - bao-auth

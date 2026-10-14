@@ -11,7 +11,7 @@ K="kubectl --context kind-$CLUSTER_NAME"
 [ -f bao/pki/ca.crt ] || die "bao/pki/ca.crt missing: run 'task bao:up' first"
 cp bao/pki/ca.crt k8s/bao-ca/ca.crt
 
-# Generate the postgres root password once. Never regenerate: the password is also what terraform gives OpenBao,
+# Generate the postgres root password once. Never regenerate: the password is also what terraform reads back and gives OpenBao,
 # and a new one would roll the pod while OpenBao still holds the old one.
 [ -s k8s/data/pg-root.env ] || { log "generating postgres root password"; printf 'POSTGRES_PASSWORD=%s\n' "$(openssl rand -hex 16)" > k8s/data/pg-root.env; chmod 600 k8s/data/pg-root.env; }
 

@@ -52,7 +52,7 @@ resource "vault_database_secret_backend_connection" "orders" {
   postgresql {
     connection_url = "postgresql://{{username}}:{{password}}@vault-lab-worker:30432/orders?sslmode=disable"
     username       = "postgres"
-    password       = var.pg_root_password
+    password       = data.kubernetes_secret_v1.postgres_root.data["POSTGRES_PASSWORD"]
   }
 }
 

@@ -11,7 +11,7 @@ All operations go through `task` (Taskfile.yaml); the lab must stay idempotent a
 - `task up` — bao -> kind cluster -> `kubectl apply -k k8s` -> HCP TF workspace -> `terraform apply`
 - `task k8s:apply` / `task k8s:diff` — all Kubernetes-only objects are plain YAML in `k8s/` applied with Kustomize (`kubectl apply -k`); Terraform does NOT manage any k8s resources
 - `task smoke` — policy test matrix; exits non-zero on any FAIL. There is no single-test mode: edit/comment cases in `scripts/smoke-test.sh` (one `run_case` per pod).
-- `task tf:plan` / `task tf:apply` — Terraform is OpenBao-only. Always run it via `task` / `scripts/tf.sh`, which injects `VAULT_TOKEN` and the cluster-derived inputs (CA, reviewer token, SA public key, postgres password) as `TF_VAR_*`. Bare `terraform` in `terraform/` fails. `TERRAFORM_TOKEN` must be in the environment.
+- `task tf:plan` / `task tf:apply` — Terraform is OpenBao-only. It has no `kubernetes_*` resources, only read-only data sources in `terraform/cluster.tf` (cluster CA, `bao-auth` reviewer token, postgres password) plus the kind SA public key, so `task k8s:apply` must run first. Run it via `task` (injects `VAULT_TOKEN` from `.secrets/init.json`); bare `terraform` fails with "no vault token set". `TERRAFORM_TOKEN` must be in the environment.
 - `task audit` — pretty-printed OpenBao audit log (`scripts/audit-pretty.jq`)
 - `task down` (deletes the kind cluster only), `task bao:down` (keeps data), `task bao:purge` (wipes OpenBao data, keys, certs)
 
