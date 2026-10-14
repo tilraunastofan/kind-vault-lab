@@ -1,0 +1,53 @@
+version: "3"
+
+tasks:
+  up:
+    desc: Bootstrap the whole lab (kind, bao network, HCP workspace, terraform apply)
+    cmds:
+      - task: bao:check
+      - task: cluster:up
+      - task: tf:workspace
+      - task: tf:apply
+
+  down:
+    desc: Tear down the kind cluster (OpenBao container is left running)
+    cmds:
+      - ./scripts/cluster-down.sh
+
+  bao:check:
+    desc: Fail unless the shared OpenBao container is unsealed
+    cmds:
+      - ./scripts/bao-status.sh
+
+  cluster:up:
+    desc: Create the kind cluster and attach bao to the kind network
+    cmds:
+      - ./scripts/cluster-up.sh
+
+  tf:workspace:
+    desc: Create the HCP Terraform workspace (local execution) if missing
+    cmds:
+      - ./scripts/tfc-workspace-up.sh
+
+  tf:init:
+    dir: terraform
+    cmds:
+      - terraform init
+
+  tf:plan:
+    dir: terraform
+    deps: [tf:init]
+    cmds:
+      - terraform plan
+
+  tf:apply:
+    dir: terraform
+    deps: [tf:init]
+    desc: Apply k8s + OpenBao config (needs VAULT_TOKEN, see README)
+    cmds:
+      - terraform apply -auto-approve
+
+  smoke:
+    desc: Pod in the cluster logs in to OpenBao via the kubernetes auth method and reads a secret
+    cmds:
+      - ./scripts/smoke-test.sh

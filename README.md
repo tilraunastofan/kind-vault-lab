@@ -29,3 +29,20 @@ Lab stack comprises of a few things:
 - Sibiling labs that can be used as examples: /Users/jakob/Developer/kind-lab-argo-kargo-tekton
 
 - Lab is stored in a private GitHub repo: <https://github.com/tilraunastofan/kind-vault-lab>
+
+## Usage
+
+```sh
+task up          # bao check -> kind cluster -> HCP TF workspace -> terraform apply
+task smoke       # pod logs in to OpenBao via kubernetes auth, reads secret/demo/config
+task down        # delete the kind cluster (shared bao container is untouched)
+```
+
+Prerequisites: `~/bao` stack running and **unsealed** (`~/bao/scripts/unseal.sh`), `TERRAFORM_TOKEN`
+and `VAULT_TOKEN` (OpenBao token) exported.
+
+Layout: `cluster/` kind config, `scripts/` idempotent bootstrap steps, `terraform/` k8s + OpenBao config
+(state in HCP workspace `tilraunastofan/kind-vault-lab`, **local execution** because HCP runners can't reach the laptop).
+
+The `bao` container is attached to the `kind` docker network so pods reach it at `https://bao:8200`
+and it reaches the API server at `https://vault-lab-control-plane:6443`.

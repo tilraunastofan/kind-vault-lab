@@ -1,0 +1,7 @@
+CREDENTIALS.md
+.terraform/
+*.tfstate*
+*.tfvars
+!*.tfvars.example
+.env
+.DS_Store
