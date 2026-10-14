@@ -11,5 +11,5 @@ listener "tcp" {
   tls_key_file  = "/openbao/tls/bao.key"
 }
 
-api_addr     = "https://bao.orb.local:8200"
+api_addr     = "https://bao.orb.local"
 cluster_addr = "https://bao.orb.local:8201"

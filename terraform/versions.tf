@@ -18,8 +18,7 @@ terraform {
 
 # OpenBao is API compatible with the vault provider. Token comes from VAULT_TOKEN.
 provider "vault" {
-  address      = var.bao_addr
-  ca_cert_file = pathexpand(var.bao_ca_file)
+  address = var.bao_addr
 }
 
 provider "kubernetes" {

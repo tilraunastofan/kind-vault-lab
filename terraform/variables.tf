@@ -1,6 +1,6 @@
 variable "bao_addr" {
-  description = "OpenBao address as seen from this laptop (OrbStack)"
-  default     = "https://bao.orb.local:8200"
+  description = "OpenBao address as seen from this laptop (OrbStack automatic HTTPS, system-trusted)"
+  default     = "https://bao.orb.local"
 }
 
 variable "bao_ca_file" {

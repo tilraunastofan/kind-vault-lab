@@ -1,4 +1,4 @@
-# Dev-only OpenBao. Reachable from the Mac at https://bao.orb.local:8200 (OrbStack).
+# Dev-only OpenBao. Reachable from the Mac at https://bao.orb.local (OrbStack).
 services:
   bao:
     image: openbao/openbao:2.7.0

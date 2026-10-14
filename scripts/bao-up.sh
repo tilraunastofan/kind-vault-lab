@@ -21,7 +21,7 @@ fi
 
 docker compose -f bao/compose.yaml up -d
 
-until curl -s -o /dev/null --cacert bao/pki/ca.crt https://bao.orb.local:8200/v1/sys/health; do sleep 1; done
+until curl -s -o /dev/null https://bao.orb.local/v1/sys/health; do sleep 1; done
 
 B() { docker exec -i -e BAO_TOKEN="$(jq -r .root_token .secrets/init.json)" bao bao "$@"; }
 
@@ -34,7 +34,7 @@ if [ ! -s .secrets/init.json ]; then
 fi
 
 log "waiting for auto-unseal"
-until curl -s --cacert bao/pki/ca.crt https://bao.orb.local:8200/v1/sys/health | jq -e '.sealed == false' >/dev/null 2>&1; do sleep 2; done
+until curl -s https://bao.orb.local/v1/sys/health | jq -e '.sealed == false' >/dev/null 2>&1; do sleep 2; done
 
 B auth list -format=json | jq -e 'has("userpass/")' >/dev/null || B auth enable userpass
 B secrets list -format=json | jq -e 'has("secret/")' >/dev/null || B secrets enable -path=secret -version=2 kv
@@ -42,4 +42,9 @@ B policy write admin - >/dev/null <<'POLICY'
 path "*" { capabilities = ["create","read","update","delete","list","sudo"] }
 POLICY
 B write auth/userpass/users/jakob password=foobar token_policies=admin >/dev/null
-log "OpenBao ready: https://bao.orb.local:8200"
+log "OpenBao ready: https://bao.orb.local"
+
+# Re-attach to the kind network if the cluster exists (recreating the container drops it).
+if docker network inspect kind >/dev/null 2>&1 && ! docker inspect -f '{{json .NetworkSettings.Networks}}' bao | grep -q '"kind"'; then
+  docker network connect kind bao
+fi
