@@ -67,6 +67,6 @@ tasks:
       - ./scripts/smoke-test.sh
 
   audit:
-    desc: Tail the OpenBao audit log (JSON, secrets HMAC'd)
+    desc: Tail the OpenBao audit log, one coloured line per request (raw JSON is in the bao container)
     cmds:
-      - docker exec bao tail -n 20 -f /openbao/file/audit.log
+      - docker exec bao tail -n 200 -f /openbao/file/audit.log | jq --unbuffered -rR -f scripts/audit-pretty.jq
