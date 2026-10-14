@@ -83,7 +83,30 @@ flowchart TD
     X2 --> AU
 ```
 
-## 4. Bootstrap and startup
+## 4. Who owns what: Kustomize vs Terraform
+
+```mermaid
+flowchart LR
+    subgraph K["k8s/ - Kustomize (kubectl apply -k)"]
+        NS[namespaces + tenant SAs]
+        BA[bao-auth SA + token + auth-delegator]
+        CA[bao-ca ConfigMaps]
+        PG[postgres + root password Secret]
+    end
+    subgraph T["terraform/ - OpenBao only"]
+        AU[auth mounts + roles]
+        PO[policies]
+        KV[kv data + database engine]
+    end
+    BA -- "reviewer token" --> TS[scripts/tf.sh<br/>TF_VAR_*]
+    PG -- "root password" --> TS
+    API[kube-apiserver] -- "CA + SA public key" --> TS
+    TS --> T
+    T -- "configures" --> BAO[(OpenBao)]
+    K -- "applied to" --> API
+```
+
+## 5. Bootstrap and startup
 
 ```mermaid
 flowchart LR

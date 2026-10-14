@@ -64,18 +64,23 @@ drops the attachment; the scripts re-attach it.
 
 ## The `jwt-k8s` variant needs less runtime trust
 
-OpenBao holds the API server's **public signing key** (pinned in Terraform from
-`/etc/kubernetes/pki/sa.pub`) and verifies the token signature itself: no call
+OpenBao holds the API server's **public signing key** (read from
+`/etc/kubernetes/pki/sa.pub` by `scripts/tf.sh` and pinned by Terraform) and verifies the token signature itself: no call
 to the API server, no reviewer token. Trade-off: if the cluster's signing key
 rotates, re-apply Terraform. It is also what exposes the pod name (see
 `POLICIES.md`).
 
-## Who authenticates Terraform? (the real bootstrap)
+## Who authenticates what during setup? (the real bootstrap)
 
-- Terraform uses the OpenBao **root token** from `.secrets/init.json`, created
-  by `operator init` on the first `task bao:up`, injected as `VAULT_TOKEN` by
-  the Taskfile.
-- It reaches the cluster with the local kubeconfig (context `kind-vault-lab`).
+The work is split so each tool has one job (see the diagram in `DIAGRAMS.md`):
+
+- **Kustomize** (`kubectl apply -k k8s`, via your kubeconfig, context `kind-vault-lab`) creates everything on
+  the cluster side: namespaces, service accounts, `bao-auth` + its token, `bao-ca`, Postgres.
+- **Terraform** configures only OpenBao. It uses the OpenBao **root token** from `.secrets/init.json`, created
+  by `operator init` on the first `task bao:up`. It never talks to the cluster: `scripts/tf.sh` reads the
+  values it needs from the cluster (CA, reviewer token, SA public key) and the Postgres password from
+  `k8s/data/pg-root.env`, and passes them in as `TF_VAR_*` together with `VAULT_TOKEN`.
+- Order matters: the cluster objects must exist before Terraform, because the reviewer token is created there.
 - Anything an agent or human needs beyond that is a named policy, `lab-admin`,
   not the root token.
 

@@ -18,7 +18,7 @@ or policy exists:
 | `secret/data/namespaces/<ns>/*` | any SA in that namespace                         |
 | `database/creds/<ns>-<sa>`      | that SA (dynamic Postgres user, 5m TTL, max 15m) |
 
-Onboarding a service = create SA + kv data + DB role. No policy edit.
+Onboarding a service = create SA (`k8s/tenants/<ns>/serviceaccounts.yaml`) + kv data and DB role (`terraform/data.tf`). No policy edit.
 
 ## Pattern 2: identity = pod name (`jwt` auth)
 
