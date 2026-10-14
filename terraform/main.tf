@@ -7,6 +7,8 @@ resource "kubernetes_service_account_v1" "bao_auth" {
   }
 }
 
+# Why an explicit Secret: since k8s 1.24 ServiceAccounts get no long-lived token automatically. Bao calls
+# TokenReview outside the cluster and so needs a durable credential; this is that one deliberate exception.
 resource "kubernetes_secret_v1" "bao_auth_token" {
   metadata {
     name        = "bao-auth-token"
@@ -17,6 +19,7 @@ resource "kubernetes_secret_v1" "bao_auth_token" {
   wait_for_service_account_token = true
 }
 
+# system:auth-delegator = permission to call TokenReview/SubjectAccessReview, nothing else.
 resource "kubernetes_cluster_role_binding_v1" "bao_auth" {
   metadata { name = "bao-auth-delegator" }
   role_ref {

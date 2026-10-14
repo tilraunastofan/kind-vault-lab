@@ -5,7 +5,7 @@ services:
     container_name: bao
     hostname: bao
     command: ["bao", "server", "-config=/openbao/config/bao.hcl"]
-    cap_add: [IPC_LOCK]
+    cap_add: [IPC_LOCK]   # lets bao mlock memory so secrets aren't swapped to disk
     restart: unless-stopped
     environment:
       BAO_ADDR: https://127.0.0.1:8200
@@ -15,6 +15,8 @@ services:
       - ./pki:/openbao/tls:ro
       - bao-data:/openbao/file
 
+  # Why a sidecar instead of OpenBao's own auto-unseal: that needs an external KMS/transit; for a dev
+  # lab one key file is enough. NOT acceptable for production: whoever reads this file owns the secrets.
   # Auto-unseal: keeps trying to unseal with the key from .secrets/ (dev only!)
   bao-unseal:
     image: openbao/openbao:2.7.0
@@ -31,6 +33,7 @@ services:
     command:
       - |
         while true; do
+          # `bao status` exits 2 when sealed (1 = unreachable), so this unseals only in the sealed state
           if [ -s /secrets/unseal.key ] && bao status >/dev/null 2>&1; [ $$? -eq 2 ]; then
             bao operator unseal "$$(cat /secrets/unseal.key)" >/dev/null 2>&1 && echo unsealed
           fi

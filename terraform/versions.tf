@@ -18,6 +18,7 @@ terraform {
   }
 }
 
+# Why the hashicorp/vault provider for OpenBao: OpenBao forked from Vault and kept the API, so it works.
 # OpenBao is API compatible with the vault provider. Token comes from VAULT_TOKEN.
 provider "vault" {
   address = var.bao_addr

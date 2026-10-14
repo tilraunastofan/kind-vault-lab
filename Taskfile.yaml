@@ -1,5 +1,7 @@
 version: "3"
 
+# Root token for terraform only; the pods and policies in the lab never use it. Evaluated lazily so
+# tasks that run before .secrets/ exists (bao:up) still work (`|| true`).
 env:
   VAULT_TOKEN:
     sh: jq -r .root_token .secrets/init.json 2>/dev/null || true
@@ -38,6 +40,8 @@ tasks:
     cmds:
       - ./scripts/cluster-up.sh
 
+  # Order matters: bao must be up before the cluster (network attach) and both before terraform
+  # (it configures auth in bao and objects in the cluster). Terraform state is in HCP.
   tf:workspace:
     desc: Create the HCP Terraform workspace (local execution) if missing
     cmds:

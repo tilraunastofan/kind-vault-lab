@@ -1,3 +1,5 @@
+# Why accessors: template keys are per auth *mount*, not per type, so an alias from another mount (same
+# SA name, different trust root) can never satisfy these policies.
 locals {
   k8s_acc = vault_auth_backend.kubernetes.accessor
   jwt_acc = vault_jwt_auth_backend.k8s_jwt.accessor
@@ -43,6 +45,7 @@ resource "vault_policy" "k8s_app" {
   EOT
 }
 
+# Pod-level identity: finer than SA, but pod names churn on Deployments (see docs/POLICIES.md).
 resource "vault_policy" "k8s_pod" {
   name   = "k8s-pod"
   policy = <<-EOT

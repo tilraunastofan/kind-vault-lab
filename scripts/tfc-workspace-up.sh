@@ -10,6 +10,7 @@ require_cmd curl jq
 api="https://app.terraform.io/api/v2"
 h=(-H "Authorization: Bearer $TERRAFORM_TOKEN" -H "Content-Type: application/vnd.api+json")
 
+# 200 = exists. Checking first (instead of POST and ignoring 422) keeps real API errors visible.
 code=$(curl -s -o /dev/null -w '%{http_code}' "${h[@]}" "$api/organizations/$TF_ORG/workspaces/$TF_WORKSPACE")
 if [ "$code" = 200 ]; then
   log "workspace $TF_WORKSPACE exists"

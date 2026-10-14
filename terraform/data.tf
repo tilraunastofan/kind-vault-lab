@@ -1,4 +1,6 @@
 # ---------- Mock kv-v2 data ----------
+# kv paths mirror the policy templates in policies.tf: the *path layout is the access-control model*.
+# Change one without the other and tenants lose or gain access.
 locals {
   app_secrets = {
     "team-a/payments" = { api_key = "pay-mock-1111", webhook_secret = "whsec-mock-a" }
@@ -84,6 +86,7 @@ resource "kubernetes_deployment_v1" "postgres" {
   }
 }
 
+# Why NodePort: bao is outside the cluster and ClusterIPs aren't routable from the docker network.
 # NodePort so the bao container (on the kind docker network) can reach it at vault-lab-worker:30432
 resource "kubernetes_service_v1" "postgres" {
   metadata {
@@ -107,8 +110,9 @@ resource "vault_mount" "database" {
 }
 
 resource "vault_database_secret_backend_connection" "orders" {
-  backend       = vault_mount.database.path
-  name          = "orders"
+  backend = vault_mount.database.path
+  name    = "orders"
+  # Connection-level allow-list: even a misconfigured role elsewhere can't mint creds from this connection.
   allowed_roles = [for k, _ in local.app_secrets : replace(k, "/", "-")]
   postgresql {
     connection_url = "postgresql://{{username}}:{{password}}@vault-lab-worker:30432/orders?sslmode=disable"
@@ -120,10 +124,11 @@ resource "vault_database_secret_backend_connection" "orders" {
 
 # One DB role per <namespace>-<serviceaccount>; the policy template maps identity -> role name.
 resource "vault_database_secret_backend_role" "app" {
-  for_each    = local.app_secrets
-  backend     = vault_mount.database.path
-  name        = replace(each.key, "/", "-")
-  db_name     = vault_database_secret_backend_connection.orders.name
+  for_each = local.app_secrets
+  backend  = vault_mount.database.path
+  name     = replace(each.key, "/", "-")
+  db_name  = vault_database_secret_backend_connection.orders.name
+  # Short-lived on purpose: a leaked credential expires by itself and bao drops the DB role at expiry.
   default_ttl = 300
   max_ttl     = 900
   creation_statements = [

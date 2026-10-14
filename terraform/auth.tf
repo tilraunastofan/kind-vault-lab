@@ -6,6 +6,8 @@ resource "vault_auth_backend" "kubernetes" {
   tune {
     default_lease_ttl = "10m"
     max_lease_ttl     = "30m"
+    # set explicitly: the server reports this default back and the provider otherwise shows a diff on every plan
+    token_type = "default-service"
   }
 }
 
@@ -27,7 +29,7 @@ resource "vault_kubernetes_auth_backend_role" "app" {
   audience                         = "bao" # token must be projected with aud=bao, not the API-server default
   alias_name_source                = "serviceaccount_name"
   token_policies                   = [vault_policy.k8s_app.name]
-  token_no_default_policy          = true # drop the broad `default` policy
+  token_no_default_policy          = true # `default` grants extras (cubbyhole etc.); auditors prefer explicit grants only
   token_ttl                        = 300
   token_max_ttl                    = 900
   token_type                       = "service"
@@ -37,18 +39,23 @@ resource "vault_kubernetes_auth_backend_role" "app" {
 # The kubernetes method cannot see the pod name. Projected SA tokens carry
 # kubernetes.io/pod/{name,uid} claims, so we validate them as plain JWTs.
 
+# The API server's SA signing key. Needed because /openid/v1/jwks requires auth, so bao can't fetch it by
+# URL; pinning the public key avoids giving bao a credential for discovery. Key rotation means re-apply.
 data "external" "sa_pubkey" {
   program = ["bash", "-c", "docker exec vault-lab-control-plane cat /etc/kubernetes/pki/sa.pub | jq -Rs '{pem: .}'"]
 }
 
 resource "vault_jwt_auth_backend" "k8s_jwt" {
-  path                   = "jwt-k8s"
-  type                   = "jwt"
-  bound_issuer           = "https://kubernetes.default.svc.cluster.local"
-  jwt_validation_pubkeys = [data.external.sa_pubkey.result.pem]
+  path         = "jwt-k8s"
+  type         = "jwt"
+  bound_issuer = "https://kubernetes.default.svc.cluster.local"
+  # trimspace: bao stores the PEM without its trailing newline; keeping it would show a diff on every plan
+  jwt_validation_pubkeys = [trimspace(data.external.sa_pubkey.result.pem)]
   tune {
     default_lease_ttl = "10m"
     max_lease_ttl     = "30m"
+    # set explicitly: the server reports this default back and the provider otherwise shows a diff on every plan
+    token_type = "default-service"
   }
 }
 
@@ -60,12 +67,15 @@ resource "vault_jwt_auth_backend_role" "pod" {
   # one entity per POD UID -> pod name is reliable in alias metadata
   user_claim              = "/kubernetes.io/pod/uid"
   user_claim_json_pointer = true
+  # Copy claims into alias metadata: that is what {{identity.entity.aliases.*.metadata.*}} reads in policies.
   claim_mappings = {
     "/kubernetes.io/namespace"           = "namespace"
     "/kubernetes.io/pod/name"            = "pod_name"
     "/kubernetes.io/serviceaccount/name" = "service_account"
   }
   # same namespace allow-list as the kubernetes role (audit: no unscoped logins)
+  # Without this any namespace could log in (found by the team-c negative test). The glob type is what
+  # makes the comma-separated value act as a list of allowed values.
   bound_claims_type       = "glob"
   bound_claims            = { "/kubernetes.io/namespace" = join(",", local.onboarded_namespaces) }
   token_policies          = [vault_policy.k8s_pod.name]

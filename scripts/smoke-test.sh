@@ -4,12 +4,14 @@
 set -uo pipefail
 cd "$(dirname "$0")/.."
 source scripts/lib.sh
+# Explicit context so the test never runs against whatever cluster the shell currently points at.
 K="kubectl --context kind-$CLUSTER_NAME"
 
 # run_case <ns> <sa> <pod> <auth:k8s|jwt> <login_want> <<< "want|METHOD|path" lines
 run_case() {
   local ns=$1 sa=$2 pod=$3 auth=$4 login_want=$5 tests
   tests=$(cat)
+  # Pods are immutable and logs are read after completion, so always start from a fresh pod.
   $K -n "$ns" delete pod "$pod" --ignore-not-found --wait=true >/dev/null
   $K -n "$ns" apply -f - >/dev/null <<YAML
 apiVersion: v1
@@ -18,6 +20,8 @@ metadata: {name: $pod}
 spec:
   serviceAccountName: $sa
   restartPolicy: Never
+  # The default token has the API-server audience, which our role rejects on purpose. Only the
+  # projected aud=bao token below is mounted, so the test can't accidentally pass with the wrong one.
   automountServiceAccountToken: false
   containers:
     - name: t
@@ -31,6 +35,7 @@ $(sed 's/^/            /' <<<"$tests")
       command: [sh, -c]
       args:
         - |
+          # In-cluster address: the bao container is on the kind network, trusted via the lab CA in bao-ca.
           B=https://bao:8200; C="--cacert /ca/ca.crt"
           JWT=\$(cat /var/run/secrets/bao/token)
           if [ "\$AUTH" = k8s ]; then LP=auth/kubernetes/login; ROLE=app; else LP=auth/jwt-k8s/login; ROLE=pod; fi
@@ -38,6 +43,7 @@ $(sed 's/^/            /' <<<"$tests")
           code=\$(echo "\$R" | tail -1)
           if [ "\$code" != "\$LOGIN_WANT" ]; then echo "FAIL login (want \$LOGIN_WANT got \$code)"; exit 0; fi
           echo "PASS login (\$code)"
+          # A denied login is itself a valid expectation (team-c); stop here, there is no token to probe with.
           [ "\$code" = 200 ] || exit 0
           TOK=\$(echo "\$R" | head -n -1 | sed 's/.*"client_token":"\([^"]*\)".*/\1/')
           echo "\$TESTS" | while IFS='|' read -r want method path; do
@@ -110,4 +116,5 @@ T
 } | tee "$OUT"
 echo
 echo "passed: $(grep -c 'PASS' "$OUT")  failed: $(grep -c 'FAIL' "$OUT")"
+# Non-zero exit on any FAIL so this works as a CI/pre-commit gate for policy changes.
 ! grep -q FAIL "$OUT"

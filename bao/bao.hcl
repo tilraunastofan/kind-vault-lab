@@ -1,5 +1,6 @@
 ui = true
 
+# Raft (integrated storage) instead of file: no external dependency, and it's what production uses.
 storage "raft" {
   path    = "/openbao/file"
   node_id = "bao-lab"
@@ -11,6 +12,7 @@ listener "tcp" {
   tls_key_file  = "/openbao/tls/bao.key"
 }
 
+# Advertised addresses are what clients/standbys are told to use; they must match the OrbStack name.
 api_addr     = "https://bao.orb.local"
 cluster_addr = "https://bao.orb.local:8201"
 
