@@ -1,7 +1,7 @@
 # OpenBao <-> Kubernetes policy patterns
 
 Run `task smoke` to execute the allow/deny matrix (`scripts/smoke-test.sh`) from real pods.
-More ideas: `IDEAS.md`. Config: `terraform/{auth,policies,data,workloads}.tf`. Audit log: `task audit` (`bao/bao.hcl`).
+More ideas: `IDEAS.md`, `PKI.md`. Config: `terraform/{auth,policies,data,workloads}.tf`. Audit log: `task audit` (`bao/bao.hcl`).
 
 ## Pattern 1: identity = namespace + serviceaccount (`kubernetes` auth)
 

@@ -13,6 +13,7 @@ A single PKI role with `allowed_domains_template=true`, with domains such as
 Any onboarded service account can issue mTLS certs for its own service DNS name only. Same "no policy edit on onboarding" idea as
 `k8s-app`, applied to certificates.
 
+- Background: see `PKI.md`.
 - Test: `team-a/payments` can issue `payments.team-a.svc` (200) and is refused `frontend.team-a.svc` (4xx).
 - Needs: a `pki` mount, a root/intermediate CA, one role, one policy path `pki/issue/<role>`.
 
