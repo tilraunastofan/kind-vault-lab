@@ -74,3 +74,8 @@ tasks:
     desc: Tail the OpenBao audit log, one coloured line per request (raw JSON is in the bao container)
     cmds:
       - docker exec bao tail -n 200 -f /openbao/file/audit.log | jq --unbuffered -rR -f scripts/audit-pretty.jq
+
+  auditraw:
+    desc: Tail the OpenBao audit log
+    cmds:
+      - docker exec bao tail -n 200 -f /openbao/file/audit.log
