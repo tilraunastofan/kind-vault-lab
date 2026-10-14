@@ -45,7 +45,12 @@ resource "vault_policy" "k8s_app" {
   EOT
 }
 
-# Pod-level identity: finer than SA, but pod names churn on Deployments (see docs/POLICIES.md).
+# Pod-level identity: finer than the service-account policy above, e.g. replicas ledger-0 and ledger-1
+# share one SA but each reads only its own secret (a per-shard key).
+# This only works when pod names are known in advance, because the secret is stored under the pod name:
+# StatefulSet pods (ledger-0) are stable; Deployment pods (payments-7d9f6c5b8-x2k4q) get a new random name on
+# every restart/rollout, so there would be nothing to pre-create. Use k8s-app for Deployments.
+# Side effect: one OpenBao entity per pod UID, which accumulates with churn (see docs/POLICIES.md).
 resource "vault_policy" "k8s_pod" {
   name   = "k8s-pod"
   policy = <<-EOT
