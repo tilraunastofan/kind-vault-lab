@@ -69,7 +69,7 @@
   <text x="376" y="604" font-size="13" font-weight="700" fill="#1e3a8a">Control plane: kube-apiserver  (vault-lab-control-plane:6443)</text>
   <text x="376" y="628" font-size="12" fill="#1e40af">• signs SA tokens (its public key is pinned in bao's jwt-k8s mount)</text>
   <text x="376" y="648" font-size="12" fill="#1e40af">• answers TokenReview calls from OpenBao</text>
-  <text x="376" y="668" font-size="12" fill="#1e40af">• hosts Terraform-managed SAs, namespaces, ConfigMaps</text>
+  <text x="376" y="668" font-size="12" fill="#1e40af">• hosts Kustomize-managed SAs, namespaces, ConfigMaps</text>
   <text x="376" y="698" font-size="11" fill="#475569">workers' kubelets project tokens (aud=bao) into pods</text>
 
   <!-- OpenBao -->

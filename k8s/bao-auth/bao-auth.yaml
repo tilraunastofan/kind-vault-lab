@@ -1,0 +1,31 @@
+# Identity OpenBao uses to call TokenReview on this cluster.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: bao-auth
+  namespace: kube-system
+---
+# Since k8s 1.24 ServiceAccounts get no long-lived token automatically. OpenBao calls TokenReview from outside the
+# cluster and so needs a durable credential; this explicit Secret is that one deliberate exception.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: bao-auth-token
+  namespace: kube-system
+  annotations:
+    kubernetes.io/service-account.name: bao-auth
+type: kubernetes.io/service-account-token
+---
+# system:auth-delegator = permission to call TokenReview/SubjectAccessReview, nothing else.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: bao-auth-delegator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:auth-delegator
+subjects:
+  - kind: ServiceAccount
+    name: bao-auth
+    namespace: kube-system

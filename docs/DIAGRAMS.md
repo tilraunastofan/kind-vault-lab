@@ -90,7 +90,8 @@ flowchart LR
     T[task up] --> BU[bao:up<br/>CA + certs, compose up, init once]
     BU --> US[bao-unseal sidecar<br/>unseals when status exit code = 2]
     BU --> CL[cluster:up<br/>kind create, attach bao to kind network]
-    CL --> WS[tf:workspace<br/>HCP workspace, local execution]
-    WS --> TF[tf:apply<br/>k8s objects + auth mounts + policies + data]
+    CL --> K8[k8s:apply<br/>kubectl apply -k k8s: namespaces, SAs, bao-ca, postgres]
+    K8 --> WS[tf:workspace<br/>HCP workspace, local execution]
+    WS --> TF[tf:apply<br/>OpenBao only: auth mounts, policies, data, DB engine]
     TF --> SM[task smoke<br/>34 allow/deny checks from real pods]
 ```

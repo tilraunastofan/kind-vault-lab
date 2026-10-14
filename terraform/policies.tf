@@ -66,7 +66,6 @@ resource "vault_policy" "k8s_pod" {
     }
   EOT
 }
-
 # Humans/automation that administer this lab get a named policy instead of root.
 resource "vault_policy" "lab_admin" {
   name   = "lab-admin"

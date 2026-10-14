@@ -7,3 +7,5 @@ CREDENTIALS.md
 .DS_Store
 .secrets/
 bao/pki/
+k8s/bao-ca/ca.crt
+k8s/data/pg-root.env

@@ -38,72 +38,7 @@ resource "vault_kv_secret_v2" "pod" {
   data_json = jsonencode(each.value)
 }
 
-# ---------- Postgres (mock "orders" DB) + dynamic credentials ----------
-resource "random_password" "pg_root" {
-  length  = 24
-  special = false
-}
-
-resource "kubernetes_namespace_v1" "data" {
-  metadata { name = "data" }
-}
-
-resource "kubernetes_deployment_v1" "postgres" {
-  metadata {
-    name      = "postgres"
-    namespace = kubernetes_namespace_v1.data.metadata[0].name
-  }
-  spec {
-    replicas = 1
-    selector { match_labels = { app = "postgres" } }
-    template {
-      metadata { labels = { app = "postgres" } }
-      spec {
-        container {
-          name  = "postgres"
-          image = "postgres:16-alpine"
-          env {
-            name  = "POSTGRES_PASSWORD"
-            value = random_password.pg_root.result
-          }
-          env {
-            name  = "POSTGRES_DB"
-            value = "orders"
-          }
-          port { container_port = 5432 }
-          readiness_probe {
-            exec { command = ["pg_isready", "-U", "postgres"] }
-            initial_delay_seconds = 5
-            period_seconds        = 3
-          }
-          resources {
-            limits   = { memory = "256Mi" }
-            requests = { memory = "128Mi", cpu = "50m" }
-          }
-        }
-      }
-    }
-  }
-}
-
-# Why NodePort: bao is outside the cluster and ClusterIPs aren't routable from the docker network.
-# NodePort so the bao container (on the kind docker network) can reach it at vault-lab-worker:30432
-resource "kubernetes_service_v1" "postgres" {
-  metadata {
-    name      = "postgres"
-    namespace = kubernetes_namespace_v1.data.metadata[0].name
-  }
-  spec {
-    type     = "NodePort"
-    selector = { app = "postgres" }
-    port {
-      port        = 5432
-      node_port   = 30432
-      target_port = 5432
-    }
-  }
-}
-
+# ---------- Postgres (mock "orders" DB, deployed from k8s/data) + dynamic credentials ----------
 resource "vault_mount" "database" {
   path = "database"
   type = "database"
@@ -117,9 +52,8 @@ resource "vault_database_secret_backend_connection" "orders" {
   postgresql {
     connection_url = "postgresql://{{username}}:{{password}}@vault-lab-worker:30432/orders?sslmode=disable"
     username       = "postgres"
-    password       = random_password.pg_root.result
+    password       = var.pg_root_password
   }
-  depends_on = [kubernetes_deployment_v1.postgres, kubernetes_service_v1.postgres]
 }
 
 # One DB role per <namespace>-<serviceaccount>; the policy template maps identity -> role name.

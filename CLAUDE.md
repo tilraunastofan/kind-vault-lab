@@ -8,9 +8,10 @@ A **learning lab** (dev sandbox, laptop with 16GB RAM) for experimenting with Ku
 
 All operations go through `task` (Taskfile.yaml); the lab must stay idempotent and bootstrappable from zero.
 
-- `task up` — bao -> kind cluster -> HCP TF workspace -> `terraform apply`
+- `task up` — bao -> kind cluster -> `kubectl apply -k k8s` -> HCP TF workspace -> `terraform apply`
+- `task k8s:apply` / `task k8s:diff` — all Kubernetes-only objects are plain YAML in `k8s/` applied with Kustomize (`kubectl apply -k`); Terraform does NOT manage any k8s resources
 - `task smoke` — policy test matrix; exits non-zero on any FAIL. There is no single-test mode: edit/comment cases in `scripts/smoke-test.sh` (one `run_case` per pod).
-- `task tf:plan` / `task tf:apply` — always run terraform via `task`; it injects `VAULT_TOKEN` from `.secrets/init.json`. Bare `terraform` in `terraform/` fails with "no vault token set". `TERRAFORM_TOKEN` must be in the environment.
+- `task tf:plan` / `task tf:apply` — Terraform is OpenBao-only. Always run it via `task` / `scripts/tf.sh`, which injects `VAULT_TOKEN` and the cluster-derived inputs (CA, reviewer token, SA public key, postgres password) as `TF_VAR_*`. Bare `terraform` in `terraform/` fails. `TERRAFORM_TOKEN` must be in the environment.
 - `task audit` — pretty-printed OpenBao audit log (`scripts/audit-pretty.jq`)
 - `task down` (deletes the kind cluster only), `task bao:down` (keeps data), `task bao:purge` (wipes OpenBao data, keys, certs)
 
@@ -25,7 +26,7 @@ Two things run side by side; the interesting part is how they reach each other.
 
 ### Policy model (the core of the lab, see `docs/POLICIES.md`)
 
-The **kv path layout is the access-control model**: `terraform/policies.tf` templates policies on the login's entity-alias metadata (`{{identity.entity.aliases.<mount accessor>.metadata.*}}`), and `terraform/data.tf` lays out paths to match (`secret/apps/<ns>/<sa>`, `secret/namespaces/<ns>`, `secret/pods/<ns>/<pod>`, `database/creds/<ns>-<sa>`). Change one side without the other and tenants gain or lose access. Two auth mounts: `kubernetes` (ns + serviceaccount) and `jwt-k8s` (adds pod name from projected-token claims). Onboarding a service = SA + data + DB role, no policy edit. Only namespaces in `local.onboarded_namespaces` (workloads.tf) may log in; `team-c` is a deliberate negative control.
+The **kv path layout is the access-control model**: `terraform/policies.tf` templates policies on the login's entity-alias metadata (`{{identity.entity.aliases.<mount accessor>.metadata.*}}`), and `terraform/data.tf` lays out paths to match (`secret/apps/<ns>/<sa>`, `secret/namespaces/<ns>`, `secret/pods/<ns>/<pod>`, `database/creds/<ns>-<sa>`). Change one side without the other and tenants gain or lose access. Two auth mounts: `kubernetes` (ns + serviceaccount) and `jwt-k8s` (adds pod name from projected-token claims). Onboarding a service = SA + data + DB role, no policy edit. Only namespaces in `var.onboarded_namespaces` (variables.tf; keep in sync with `k8s/tenants/`) may log in; `team-c` is a deliberate negative control.
 
 `scripts/smoke-test.sh` is both the test suite and the executable spec: pods log in with an `aud=bao` projected token and probe allowed/denied paths. Add a matrix row whenever policy changes. Gotchas it encodes: permitted-but-missing path = 404, denied = 403 (seed data so 200-vs-403 is unambiguous); a failed JWT `bound_claims` check returns 400.
 

@@ -1,17 +1,13 @@
 version: "3"
 
-# Root token for terraform only; the pods and policies in the lab never use it. Evaluated lazily so
-# tasks that run before .secrets/ exists (bao:up) still work (`|| true`).
-env:
-  VAULT_TOKEN:
-    sh: jq -r .root_token .secrets/init.json 2>/dev/null || true
 
 tasks:
   up:
-    desc: Bootstrap the whole lab (kind, bao network, HCP workspace, terraform apply)
+    desc: Bootstrap the whole lab (bao, kind, kustomize apply, HCP workspace, terraform apply)
     cmds:
       - task: bao:up
       - task: cluster:up
+      - task: k8s:apply
       - task: tf:workspace
       - task: tf:apply
 
@@ -40,30 +36,38 @@ tasks:
     cmds:
       - ./scripts/cluster-up.sh
 
-  # Order matters: bao must be up before the cluster (network attach) and both before terraform
-  # (it configures auth in bao and objects in the cluster). Terraform state is in HCP.
+  # Order matters: bao before the cluster (network attach), the cluster objects before terraform (it reads the
+  # reviewer token/CA from them to configure OpenBao). Terraform state is in HCP.
   tf:workspace:
     desc: Create the HCP Terraform workspace (local execution) if missing
     cmds:
       - ./scripts/tfc-workspace-up.sh
 
-  tf:init:
-    dir: terraform
+  k8s:apply:
+    desc: Apply all Kubernetes manifests with Kustomize (kubectl apply -k k8s)
     cmds:
-      - terraform init
+      - ./scripts/k8s-up.sh
+
+  k8s:diff:
+    desc: Show what `kubectl apply -k k8s` would change
+    cmds:
+      - kubectl --context kind-vault-lab diff -k k8s || true
+
+  # Terraform manages OpenBao only; always run it through scripts/tf.sh (injects VAULT_TOKEN and cluster values).
+  tf:init:
+    cmds:
+      - ./scripts/tf.sh init
 
   tf:plan:
-    dir: terraform
     deps: [tf:init]
     cmds:
-      - terraform plan
+      - ./scripts/tf.sh plan
 
   tf:apply:
-    dir: terraform
     deps: [tf:init]
-    desc: Apply k8s + OpenBao config (VAULT_TOKEN is read from .secrets/init.json)
+    desc: Apply the OpenBao configuration (auth mounts, policies, data, DB engine)
     cmds:
-      - terraform apply -auto-approve
+      - ./scripts/tf.sh apply -auto-approve
 
   smoke:
     desc: Policy test matrix - pods in several namespaces/SAs/pod names probe allowed and denied paths

@@ -11,10 +11,7 @@ terraform {
   }
 
   required_providers {
-    vault      = { source = "hashicorp/vault", version = "~> 4.0" }
-    kubernetes = { source = "hashicorp/kubernetes", version = "~> 2.30" }
-    random     = { source = "hashicorp/random", version = "~> 3.6" }
-    external   = { source = "hashicorp/external", version = "~> 2.3" }
+    vault = { source = "hashicorp/vault", version = "~> 4.0" }
   }
 }
 
@@ -22,9 +19,4 @@ terraform {
 # OpenBao is API compatible with the vault provider. Token comes from VAULT_TOKEN.
 provider "vault" {
   address = var.bao_addr
-}
-
-provider "kubernetes" {
-  config_path    = "~/.kube/config"
-  config_context = "kind-vault-lab"
 }

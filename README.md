@@ -3,6 +3,12 @@
 This is a new `kind` lab that runs on my laptop (16GB RAM). The purpose of this lab is to
 test out and experiment with Kubernetes <-> OpenBao setups and configs.
 
+## Links
+
+<https://www.hashicorp.com/en/blog/vault-pkiaas-and-jetstack-cert-manager>
+
+<https://kubernetes.io/docs/reference/access-authn-authz/certificate-signing-requests/#pod-certificate-requests>
+
 ## Environment and credentials
 
 dev sandbox only, agent handling of tokens and credentials is pre-approved
@@ -33,7 +39,8 @@ Lab stack comprises of a few things:
 ## Usage
 
 ```sh
-task up          # bao check -> kind cluster -> HCP TF workspace -> terraform apply
+task up          # bao -> kind cluster -> kubectl apply -k k8s -> HCP TF workspace -> terraform apply (OpenBao only)
+task k8s:apply   # just the Kubernetes manifests (Kustomize); task k8s:diff shows what would change
 task smoke       # policy test matrix: pods in team-a/b/c probe allowed + denied paths (docs/POLICIES.md)
 task audit       # tail the OpenBao audit log
 task down        # delete the kind cluster (shared bao container is untouched)
@@ -43,7 +50,7 @@ Prerequisites: `TERRAFORM_TOKEN` exported. OpenBao is owned by this repo (`bao/`
 generated on first run, OpenBao is initialised with 1 key share, and a `bao-unseal` sidecar container
 auto-unseals it whenever it is sealed (also after restarts). Key and root token live in gitignored `.secrets/`.
 
-Layout: `cluster/` kind config, `scripts/` idempotent bootstrap steps, `terraform/` k8s + OpenBao config
+Layout: `cluster/` kind config, `scripts/` idempotent bootstrap steps, `k8s/` plain YAML applied with Kustomize (all Kubernetes-only objects), `terraform/` OpenBao config only
 (state in HCP workspace `tilraunastofan/kind-vault-lab`, **local execution** because HCP runners can't reach the laptop).
 
 The `bao` container is attached to the `kind` docker network so pods reach it at `https://bao:8200`
