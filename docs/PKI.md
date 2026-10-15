@@ -1,6 +1,6 @@
 # Per-service-account PKI certificates
 
-Status: **concept, not implemented yet** (backlog item 1 in `IDEAS.md`).
+🚧 Status: **concept, not implemented yet** (backlog item 1 in `IDEAS.md`).
 
 ## The idea
 
@@ -17,12 +17,12 @@ a service needs no PKI role or policy edit.
 
 ## What it gives us
 
-1. **Mutual TLS between services.** A service-account token proves identity to OpenBao and the Kubernetes API only.
+1. ⭐ **Mutual TLS between services.** A service-account token proves identity to OpenBao and the Kubernetes API only.
    A certificate lets two services prove who they are to *each other*, in both directions.
 2. **Authorization by certificate name.** A service can allow callers by the identity in the cert ("only
    `team-a/frontend` may call `/charge`"). Meshes (Istio, Linkerd) do this with SPIFFE-style IDs
    (`spiffe://cluster/ns/team-a/sa/payments`); the cert can carry the same URI SAN, so the identity matches the one OpenBao uses.
-3. **No impersonation, enforced by policy.** The CA only signs names derived from the caller's own namespace and
+3. 🔐 **No impersonation, enforced by policy.** The CA only signs names derived from the caller's own namespace and
    service account, so `payments` cannot obtain a certificate for `frontend`, even if compromised.
 4. **Short-lived and self-expiring.** Minutes-to-hours lifetimes mean no revocation lists and no manual renewal; a
    stolen key dies on its own. Consistent with the 5-minute tokens and DB credentials in this lab.
@@ -44,7 +44,7 @@ without the login step; see `CLUSTER-TRUST.md`.
 - **Service mesh:** gives most of this transparently (mTLS, rotation). The OpenBao approach is more manual (the app
   or a sidecar must request and reload certs) but fits when there is no mesh or OpenBao must be the CA.
 
-## Limits
+## ⚠️ Limits
 
 - The service-account token is still the bootstrap credential: whoever steals it can request that service
   account's certificate until the token expires.

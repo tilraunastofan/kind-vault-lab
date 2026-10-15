@@ -9,9 +9,9 @@ Policy details: `POLICIES.md`.
 
 The pod logs in. It sends its own service-account token (a JWT) to
 `POST https://bao:8200/v1/auth/kubernetes/login` with `{role: app, jwt}`.
-OpenBao never calls the pod first, and the pod holds no pre-shared secret.
+OpenBao never calls the pod first, and ⭐ **the pod holds no pre-shared secret**.
 
-### Why there is no "secret zero" to distribute
+### ⭐ Why there is no "secret zero" to distribute
 
 The kubelet projects a token into the pod, signed by the API server, valid 10
 minutes, minted with audience `bao` (`serviceAccountToken` projection; see
@@ -38,7 +38,7 @@ vouches for it.
 - On each login OpenBao sends the pod's token to the TokenReview endpoint using
   that credential; the API server answers who the token belongs to (namespace +
   service account).
-- This reviewer token is the one long-lived secret on the Kubernetes side. It
+- ⚠️ This reviewer token is the **one long-lived secret** on the Kubernetes side. It
   exists because OpenBao is outside the cluster and has no identity there.
   (Since k8s 1.24 it needs an explicit Secret; see the comment in `k8s/bao-auth/bao-auth.yaml`.)
 
@@ -55,7 +55,7 @@ Pods must reach `bao:8200` and OpenBao must reach the API server; both work only
 because they share the `kind` docker network. Recreating the `bao` container
 drops the attachment; the scripts re-attach it.
 
-## Authorization starts at login, not after it
+## 🔐 Authorization starts at login, not after it
 
 - Role `app` admits only service accounts in `team-a` and `team-b` and requires
   audience `bao` (the default API-server audience token is rejected).
@@ -85,11 +85,11 @@ The work is split so each tool has one job (see the diagram in `DIAGRAMS.md`):
 - Anything an agent or human needs beyond that is a named policy, `lab-admin`,
   not the root token.
 
-## Production hardening (not done in the lab)
+## 🚧 Production hardening (not done in the lab)
 
 - Revoke the root token after setup; administer via `lab-admin` through
   OIDC/userpass.
-- Avoid the long-lived reviewer credential. It lives in OpenBao's config and in Terraform state (the data source
+- ⚠️ Avoid the long-lived reviewer credential. It lives in OpenBao's config and in Terraform state (the data source
   in `cluster.tf` reads it). Prefer the `jwt` method: it verifies tokens by signature and has no reviewer secret.
   On a real cluster (EKS/GKE/AKS) point it at the cluster's public OIDC issuer (`oidc_discovery_url`), so no key
   is pinned and no secret exists at all; pinning `sa.pub` is only needed on kind. Pod-name policies already use

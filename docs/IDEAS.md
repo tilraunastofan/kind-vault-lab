@@ -3,11 +3,11 @@
 Backlog of ideas that build on the existing identity plumbing (see `POLICIES.md`). None are implemented yet.
 Each item lists the idea, how to test it with the existing matrix (`scripts/smoke-test.sh`), and caveats.
 
-Suggested order: 1, 2, 4, then 3 if "one team across several namespaces" matters.
+⭐ Suggested order: 1, 2, 4, then 3 if "one team across several namespaces" matters.
 
 ## Best candidates
 
-### 1. One PKI role, certificates only for your own name
+### ⭐ 1. One PKI role, certificates only for your own name
 A single PKI role with `allowed_domains_template=true`, with domains such as
 `{{identity.entity.aliases.<acc>.metadata.service_account_name}}.{{identity.entity.aliases.<acc>.metadata.service_account_namespace}}.svc`.
 Any onboarded service account can issue mTLS certs for its own service DNS name only. Same "no policy edit on onboarding" idea as
@@ -17,7 +17,7 @@ Any onboarded service account can issue mTLS certs for its own service DNS name 
 - Test: `team-a/payments` can issue `payments.team-a.svc` (200) and is refused `frontend.team-a.svc` (4xx).
 - Needs: a `pki` mount, a root/intermediate CA, one role, one policy path `pki/issue/<role>`.
 
-### 2. Per-identity kill switch
+### ⭐ 2. Per-identity kill switch
 Disable a single entity (`identity/entity/id/<id>`, `disabled=true`) to lock out one service account immediately,
 including its existing tokens, while every other workload keeps working. Shows incident response and revocation scope.
 
@@ -31,7 +31,7 @@ Several namespaces can share one team's secrets without listing service accounts
 - Test: `team-a/payments` and `team-b/billing` both tagged `team=finance` read `secret/data/teams/finance/*`; `team-a/frontend` cannot.
 - Caveat: entity metadata is only as trustworthy as whoever can write to `identity/*`; keep that in `lab-admin` only.
 
-### 4. Constrain the token, not just the paths
+### ⭐ 4. Constrain the token, not just the paths
 - `token_bound_cidrs` on the auth role so a stolen token is useless off-cluster. Test: replay a pod's token from the Mac and expect a denial.
   Caveat: bao sees the node IP (kube-proxy SNAT), not the pod IP, so bind to the kind node range.
 - `min_wrapping_ttl` / `max_wrapping_ttl` in policy to force response wrapping for sensitive reads (secret-zero handoff).
@@ -47,6 +47,6 @@ Several namespaces can share one team's secrets without listing service accounts
 - **Detection:** a `task audit:denied` filter plus a test that a burst of DENYs stands out.
 - **Static DB credentials with rotation** and `database/rotate-root/orders` (production TODO from `POLICIES.md`).
 
-## Not available in OpenBao
+## 🚫 Not available in OpenBao
 Sentinel/EGP policies and control groups (approval-gated reads) are Vault Enterprise features and cannot be demoed here.
 Closest substitutes: the kill switch (2) and wrapping requirements (4).

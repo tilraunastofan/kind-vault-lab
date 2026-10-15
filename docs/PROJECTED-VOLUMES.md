@@ -42,12 +42,12 @@ volumes:
 - **Kubelet creates and refreshes the files.** Tokens are rotated before they expire; trust bundles update when
   the bundle changes. The application only has to re-read the file (inotify or polling).
 - **Sources can be mixed.** One projected volume can hold a token, a CA and a ConfigMap key, each at its own path.
-- **Tokens are scoped.** They are bound to the pod (invalid once it is deleted) and carry the audience requested,
+- 🔐 **Tokens are scoped.** They are bound to the pod (invalid once it is deleted) and carry the audience requested,
   so a token stolen from one pod is useless against a service that expects a different audience.
-- **Audience is what makes this auditable.** OpenBao checks `aud=bao`; the cluster's default token cannot be
+- 🔐 **Audience is what makes this auditable.** OpenBao checks `aud=bao`; the cluster's default token cannot be
   replayed against it (`POLICIES.md`, `TRUST-BOOTSTRAP.md`).
 
-## Why this removes "secret zero"
+## ⭐ Why this removes "secret zero"
 
 The token is created by the platform for a pod that exists; nobody generates, ships or stores it. That is why
 OpenBao's `kubernetes` and `jwt` logins need no pre-shared secret (`TRUST-BOOTSTRAP.md`).

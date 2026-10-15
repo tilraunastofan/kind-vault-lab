@@ -9,8 +9,8 @@ ideas: `IDEAS.md`, `PKI.md`. Config:
 ## Pattern 1: identity = namespace + serviceaccount (`kubernetes` auth)
 
 One role (`app`), one templated policy (`k8s-app`). The policy resolves the
-caller's identity from the login's entity-alias metadata, so no per-service role
-or policy exists:
+caller's identity from the login's entity-alias metadata, so **no per-service role
+or policy exists**:
 
 | Path                            | Who can read                                     |
 | ------------------------------- | ------------------------------------------------ |
@@ -18,7 +18,7 @@ or policy exists:
 | `secret/data/namespaces/<ns>/*` | any SA in that namespace                         |
 | `database/creds/<ns>-<sa>`      | that SA (dynamic Postgres user, 5m TTL, max 15m) |
 
-Onboarding a service = create SA (`k8s/tenants/<ns>/serviceaccounts.yaml`) + kv data and DB role (`terraform/data.tf`). No policy edit.
+⭐ **Onboarding a service = create SA (`k8s/tenants/<ns>/serviceaccounts.yaml`) + kv data and DB role (`terraform/data.tf`). No policy edit.**
 
 ## Pattern 2: identity = pod name (`jwt` auth)
 
@@ -26,11 +26,11 @@ The kubernetes method can't see the pod name. Projected SA tokens carry
 `kubernetes.io/pod/{name,uid}`, so a `jwt` mount validates them (issuer + SA
 public key) and maps claims to alias metadata. Entity alias = pod UID, so
 metadata can't collide between pods of the same SA. Policy `k8s-pod` ->
-`secret/data/pods/<ns>/<pod>/*`. Pod names are only stable for StatefulSets; for
+`secret/data/pods/<ns>/<pod>/*`. ⚠️ Pod names are only stable for StatefulSets; for
 Deployments prefer Pattern 1. Trade-off: one OpenBao entity per pod UID (clean
 up with entity garbage-collection in production).
 
-## Audit checklist this lab satisfies
+## 🛡️ Audit checklist this lab satisfies
 
 - [x] Audit device enabled, declarative in config (OpenBao refuses API-enabled
       devices). `task audit`
@@ -47,13 +47,13 @@ up with entity garbage-collection in production).
       denied
 - [x] Policies and roles are code (Terraform), reviewed via git
 - [x] Named `lab-admin` policy exists instead of day-to-day root use
-- [ ] Not demonstrated (production TODO): rotate DB root credential
+- [ ] 🚧 Not demonstrated (production TODO): rotate DB root credential
       (`database/rotate-root/orders`), revoke the root token and use `lab-admin`
       via OIDC/userpass, auto-unseal via KMS/transit instead of a key file, ship
       audit log off-box, `token_bound_cidrs`, sentinel/EGP-style policies if
       licensed
 
-## Gotchas found while building this
+## ⚠️ Gotchas found while building this
 
 - OpenBao rejects `vault_audit`/API audit enablement: declare `audit "file" ...`
   in `bao.hcl`.
