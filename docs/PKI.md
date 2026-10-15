@@ -31,6 +31,12 @@ a service needs no PKI role or policy edit.
 6. **One trust root.** Everything chains to the CA OpenBao runs, which can also sign ingress/database certs;
    rotation happens in one place.
 
+## Kubernetes-native alternative: Pod Certificates
+
+Kubernetes 1.37 adds `PodCertificateRequest` + a `podCertificate` projected volume: kubelet makes the key, a signer
+controller issues the cert. A signer that forwards to OpenBao's PKI engine would give the same per-identity certs
+without the login step; see `CLUSTER-TRUST.md`.
+
 ## Compared with the alternatives
 
 - **cert-manager:** also issues certificates, but signs whatever the `Certificate` resource asks for. Here the name

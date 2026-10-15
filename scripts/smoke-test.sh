@@ -35,7 +35,7 @@ $(sed 's/^/            /' <<<"$tests")
       command: [sh, -c]
       args:
         - |
-          # In-cluster address: the bao container is on the kind network, trusted via the lab CA in bao-ca.
+          # In-cluster address: the bao container is on the kind network, trusted via the lab CA (ClusterTrustBundle).
           B=https://bao:8200; C="--cacert /ca/ca.crt"
           JWT=\$(cat /var/run/secrets/bao/token)
           if [ "\$AUTH" = k8s ]; then LP=auth/kubernetes/login; ROLE=app; else LP=auth/jwt-k8s/login; ROLE=pod; fi
@@ -55,8 +55,14 @@ $(sed 's/^/            /' <<<"$tests")
         - {name: ca, mountPath: /ca}
         - {name: tok, mountPath: /var/run/secrets/bao}
   volumes:
+    # Cluster-wide trust: no per-namespace ConfigMap needed (kubelet resolves the ClusterTrustBundle).
     - name: ca
-      configMap: {name: bao-ca}
+      projected:
+        sources:
+          - clusterTrustBundle:
+              signerName: bao.lab.internal/server-ca
+              labelSelector: {matchLabels: {trust: bao}}
+              path: ca.crt
     - name: tok
       projected:
         sources:

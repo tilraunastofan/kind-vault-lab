@@ -24,7 +24,7 @@ vouches for it.
 | # | Direction                  | What                                                  | Where                                                                             |
 | - | -------------------------- | ----------------------------------------------------- | --------------------------------------------------------------------------------- |
 | 1 | OpenBao trusts the cluster | API server address + CA + a **reviewer token**        | `k8s/bao-auth/` (SA + token + RBAC), `terraform/auth.tf` (`vault_kubernetes_auth_backend_config`) |
-| 2 | Pods trust OpenBao         | lab CA delivered as ConfigMap `bao-ca`                | `k8s/bao-ca/` (generated per laptop by `scripts/k8s-up.sh`), CA made by `scripts/bao-up.sh` |
+| 2 | Pods trust OpenBao         | lab CA as one cluster-wide ClusterTrustBundle         | `k8s/bao-ca/` (generated per laptop by `scripts/k8s-up.sh`), CA made by `scripts/bao-up.sh` |
 | 3 | Network path               | `bao` container attached to the `kind` docker network | `scripts/cluster-up.sh`, `scripts/bao-up.sh`                                      |
 
 ### 1. OpenBao trusts the cluster
@@ -44,7 +44,8 @@ vouches for it.
 
 ### 2. Pods trust OpenBao
 
-Pods verify `https://bao:8200` against the lab CA from `bao-ca`. The laptop uses
+Pods verify `https://bao:8200` against the lab CA, published once as a cluster-wide ClusterTrustBundle and mounted
+through a `clusterTrustBundle` projected volume (`docs/CLUSTER-TRUST.md`). The laptop uses
 a different address (`https://bao.orb.local`, OrbStack's system-trusted HTTPS)
 and needs no CA.
 
@@ -75,7 +76,7 @@ rotates, re-apply Terraform. It is also what exposes the pod name (see
 The work is split so each tool has one job (see the diagram in `DIAGRAMS.md`):
 
 - **Kustomize** (`kubectl apply -k k8s`, via your kubeconfig, context `kind-vault-lab`) creates everything on
-  the cluster side: namespaces, service accounts, `bao-auth` + its token, `bao-ca`, Postgres.
+  the cluster side: namespaces, service accounts, `bao-auth` + its token, the trust bundle, Postgres.
 - **Terraform** configures only OpenBao. It uses the OpenBao **root token** from `.secrets/init.json`, created
   by `operator init` on the first `task bao:up`. It creates no cluster objects: read-only
   data sources (`terraform/cluster.tf`, kubeconfig credentials) fetch the cluster CA, the reviewer token and the

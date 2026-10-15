@@ -39,6 +39,8 @@ Several namespaces can share one team's secrets without listing service accounts
 
 ## Worth considering
 
+- **OpenBao as the signer behind Kubernetes Pod Certificates** (v1.37): a small signer controller answering
+  `PodCertificateRequest`s from OpenBao's PKI engine; trust published as a ClusterTrustBundle. See `CLUSTER-TRUST.md`.
 - **Transit with identity-named keys:** `transit/encrypt/{{ns}}-{{sa}}`; split encrypt and decrypt across identities (producer vs consumer).
 - **Namespaces for multi-tenancy:** a namespace per team with a delegated admin who manages only their own policies.
   Believed to be in OpenBao since ~2.3; verify against 2.7 before building.

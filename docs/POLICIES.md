@@ -1,7 +1,7 @@
 # OpenBao <-> Kubernetes policy patterns
 
 Run `task smoke` to execute the allow/deny matrix (`scripts/smoke-test.sh`) from
-real pods. Diagrams: `DIAGRAMS.md`. Trust setup: `TRUST-BOOTSTRAP.md`. More
+real pods. Diagrams: `DIAGRAMS.md`. Trust setup: `TRUST-BOOTSTRAP.md`, `CLUSTER-TRUST.md`. More
 ideas: `IDEAS.md`, `PKI.md`. Config:
 `terraform/{auth,policies,data}.tf` (OpenBao) and `k8s/` (Kustomize: namespaces, service accounts, postgres). Audit log: `task audit`
 (`bao/bao.hcl`).

@@ -12,16 +12,22 @@ mkdir -p .secrets bao/pki
 if [ ! -f bao/pki/bao.crt ]; then
   log "generating CA + bao server cert"
   cd bao/pki
-  openssl req -x509 -newkey rsa:2048 -nodes -keyout ca.key -out ca.crt -days 3650 -subj "/CN=bao-lab dev CA" 2>/dev/null
+  # CA:TRUE matters: Kubernetes ClusterTrustBundle (k8s/bao-ca) rejects certificates without the CA bit, and strict
+  # TLS clients may too; a bare `openssl req -x509` does not always set it.
+  openssl req -x509 -newkey rsa:2048 -nodes -keyout ca.key -out ca.crt -days 3650 -subj "/CN=bao-lab dev CA" \
+    -addext "basicConstraints=critical,CA:TRUE" -addext "keyUsage=critical,keyCertSign,cRLSign" 2>/dev/null
   openssl req -newkey rsa:2048 -nodes -keyout bao.key -out bao.csr -subj "/CN=bao.orb.local" 2>/dev/null
-  printf 'subjectAltName=DNS:bao.orb.local,DNS:bao,DNS:localhost,IP:127.0.0.1\n' > san.cnf
+  printf 'subjectAltName=DNS:bao.orb.local,DNS:bao,DNS:localhost,IP:127.0.0.1\nbasicConstraints=CA:FALSE\nextendedKeyUsage=serverAuth\n' > san.cnf
   openssl x509 -req -in bao.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out bao.crt -days 825 -extfile san.cnf 2>/dev/null
   rm -f bao.csr san.cnf ca.srl
   chmod 644 bao.key   # the container runs as a non-root user that doesn't own the bind-mounted key; dev only
   cd ../..
+  NEW_CERTS=1
 fi
 
-docker compose -f bao/compose.yaml up -d
+# New certs need a recreate: bao reads its cert at startup, and the sidecar's single-file bind mount of ca.crt
+# keeps pointing at the old (deleted) inode.
+docker compose -f bao/compose.yaml up -d ${NEW_CERTS:+--force-recreate}
 
 until curl -s -o /dev/null https://bao.orb.local/v1/sys/health; do sleep 1; done
 

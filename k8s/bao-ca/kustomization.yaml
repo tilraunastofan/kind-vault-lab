@@ -1,9 +1,6 @@
-# CA that pods use to trust OpenBao at https://bao:8200. The CA is generated per laptop (bao/pki/ is gitignored),
-# so scripts/k8s-up.sh copies it to ca.crt here (also gitignored) before applying. Kustomize refuses files outside
-# its own directory, which is why it is copied instead of referenced.
-generatorOptions:
-  disableNameSuffixHash: true   # pods reference the ConfigMap by its plain name "bao-ca"
-configMapGenerator:
-  - {name: bao-ca, namespace: team-a, files: [ca.crt]}
-  - {name: bao-ca, namespace: team-b, files: [ca.crt]}
-  - {name: bao-ca, namespace: team-c, files: [ca.crt]}
+# Cluster-wide trust for OpenBao's TLS certificate: ONE ClusterTrustBundle instead of a ConfigMap per namespace.
+# Pods opt in with a `clusterTrustBundle` projected volume (see scripts/smoke-test.sh); kubelet keeps the file updated.
+# The manifest is generated per laptop by scripts/k8s-up.sh (the CA is generated locally and gitignored) and the
+# file lands here as clustertrustbundle.yaml (also gitignored).
+resources:
+  - clustertrustbundle.yaml
