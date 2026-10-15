@@ -9,6 +9,10 @@ test out and experiment with Kubernetes <-> OpenBao setups and configs.
 
 <https://kubernetes.io/docs/reference/access-authn-authz/certificate-signing-requests/#pod-certificate-requests>
 
+<https://kubernetes.io/blog/2026/08/28/kubernetes-v1-37-pod-certificates-and-cluster-trust-bundles/>
+
+TinyCert test cluster (linked from blog post above): <https://github.com/ahmedtd/tinycert>
+
 ## Environment and credentials
 
 dev sandbox only, agent handling of tokens and credentials is pre-approved
