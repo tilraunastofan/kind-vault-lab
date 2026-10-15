@@ -55,11 +55,34 @@ Credentials are generated locally and gitignored; **locations, not values**: Ope
 - Production gaps deliberately left out: root token not revoked, no DB root rotation, key-file unseal, audit log not
   shipped off the box (`docs/POLICIES.md` checklist).
 
+## Groundwork for the next topic: PKI / Pod Certificates (from the README "Links" section)
+
+The user's reading list points at where the lab is heading next: certificates issued to pods, with OpenBao as the CA.
+This is the agent's reading of those links (not a stated plan): confirm the intended direction before building.
+
+- Links in `README.md`: HashiCorp "Vault PKIaaS and Jetstack cert-manager" (the cert-manager + Vault PKI pattern),
+  the Kubernetes docs section on pod certificate requests, the 1.37 "Pod Certificates and Cluster Trust Bundles"
+  post, and TinyCert (`github.com/ahmedtd/tinycert`, linked from that post).
+- What is already in place: the cluster (v1.37.0) serves `PodCertificateRequest` (`certificates.k8s.io/v1`,
+  namespaced) and `ClusterTrustBundle`; the trust-bundle half is implemented (`docs/CLUSTER-TRUST.md`). The concept
+  for per-service-account certificates from OpenBao's PKI engine is written down in `docs/PKI.md`.
+- What is missing: core Kubernetes ships no Pod Certificates signer in 1.37. TinyCert is the post's reference
+  (toy, not production) signer controller: it provides the signers `ahmedtd.github.io/tinycert-service` (DNS SANs of
+  the pod's Services) and `ahmedtd.github.io/tinycert-spiffe` (SPIFFE identity of namespace + service account),
+  a Go helper library for loading SPIFFE certs/bundles, and an mTLS example. It runs on kind.
+- Two obvious paths, not started: (a) install TinyCert to learn the `podCertificate` projected volume end to end
+  (`docs/PROJECTED-VOLUMES.md`), then (b) replace it with a small signer controller that forwards
+  `PodCertificateRequest`s to an OpenBao PKI mount (policy: only names derived from the caller's own namespace and
+  service account, per `docs/PKI.md`), or use cert-manager with an OpenBao issuer as in the HashiCorp post.
+- Prerequisites for either path: a `pki` mount in `terraform/` (OpenBao config) and a root/intermediate CA; the
+  signer's CA published as a ClusterTrustBundle (same mechanism as the OpenBao TLS CA); new rows in
+  `scripts/smoke-test.sh` (own name allowed, another service's name refused).
+
 ## Backlog (nothing started)
 
 See `docs/IDEAS.md`. Suggested order: per-service-account PKI role (`docs/PKI.md`), per-identity kill switch (disable
 an entity), token constraints (`token_bound_cidrs`, wrapping, parameter limits), metadata/group-driven policy.
-Also: OpenBao as the signer behind Kubernetes 1.37 Pod Certificates (`docs/CLUSTER-TRUST.md`).
+Also: OpenBao as the signer behind Kubernetes 1.37 Pod Certificates (see the groundwork section above).
 `docs/K8S-1.37.md` records that Pod-Level Resource Managers were evaluated and parked.
 
 ## Gotchas for the next session
